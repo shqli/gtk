@@ -246,7 +246,7 @@ static inline void
 sort_border_sides (const GdkRGBA *colors,
                    int           *indices)
 {
-  gboolean done[4] = {0, 0, 0, 0};
+  bool done[4] = {0, 0, 0, 0};
   int i, k;
   int cur = 0;
 
@@ -288,7 +288,7 @@ init_projection_matrix (graphene_matrix_t     *out_proj,
   graphene_matrix_scale (out_proj, 1, -1, 1);
 }
 
-static inline gboolean G_GNUC_PURE
+static inline bool G_GNUC_PURE
 color_matrix_modifies_alpha (GskRenderNode *node)
 {
   const graphene_matrix_t *matrix = gsk_color_matrix_node_peek_color_matrix (node);
@@ -312,7 +312,7 @@ gsk_rounded_rect_shrink_to_minimum (GskRoundedRect *self)
                                          MAX (self->corner[2].height, self->corner[3].height)) * 2);
 }
 
-static inline gboolean G_GNUC_PURE
+static inline bool G_GNUC_PURE
 node_supports_transform (GskRenderNode *node)
 {
   /* Some nodes can't handle non-trivial transforms without being
@@ -348,7 +348,7 @@ load_vertex_data_with_region (GskQuadVertex        vertex_data[GL_N_VERTICES],
                               GskRenderNode       *node,
                               RenderOpBuilder     *builder,
                               const TextureRegion *r,
-                              gboolean             flip_y)
+                              bool                 flip_y)
 {
   const float min_x = builder->dx + node->bounds.origin.x;
   const float min_y = builder->dy + node->bounds.origin.y;
@@ -483,12 +483,12 @@ load_offscreen_vertex_data (GskQuadVertex    vertex_data[GL_N_VERTICES],
 }
 
 static void gsk_gl_renderer_setup_render_mode (GskGLRenderer   *self);
-static gboolean add_offscreen_ops             (GskGLRenderer   *self,
+static bool add_offscreen_ops             (GskGLRenderer   *self,
                                                RenderOpBuilder       *builder,
                                                const graphene_rect_t *bounds,
                                                GskRenderNode         *child_node,
                                                TextureRegion         *region_out,
-                                               gboolean              *is_offscreen,
+                                               bool                  *is_offscreen,
                                                guint                  flags) G_GNUC_WARN_UNUSED_RESULT;
 static void gsk_gl_renderer_add_render_ops     (GskGLRenderer   *self,
                                                 GskRenderNode   *node,
@@ -754,7 +754,7 @@ render_text_node (GskGLRenderer   *self,
                   GskRenderNode   *node,
                   RenderOpBuilder *builder,
                   const GdkRGBA   *color,
-                  gboolean         force_color)
+                  bool             force_color)
 {
   const PangoFont *font = gsk_text_node_peek_font (node);
   const PangoGlyphInfo *glyphs = gsk_text_node_peek_glyphs (node, NULL);
@@ -1221,7 +1221,7 @@ render_gl_shader_node (GskGLRenderer       *self,
     {
       GBytes *args;
       TextureRegion regions[4];
-      gboolean is_offscreen[4];
+      bool is_offscreen[4];
       for (guint i = 0; i < n_children; i++)
         {
           GskRenderNode *child = gsk_gl_shader_node_get_child (node, i);
@@ -1259,7 +1259,7 @@ render_gl_shader_node (GskGLRenderer       *self,
 /* Returns TRUE is applying transform to bounds
  * yields an axis-aligned rectangle
  */
-static gboolean
+static bool
 result_is_axis_aligned (GskTransform          *transform,
                         const graphene_rect_t *bounds)
 {
@@ -1329,7 +1329,7 @@ render_transform_node (GskGLRenderer   *self,
     case GSK_TRANSFORM_CATEGORY_UNKNOWN:
       {
         TextureRegion region;
-        gboolean is_offscreen;
+        bool is_offscreen;
 
         if (node_supports_transform (child))
           {
@@ -1387,7 +1387,7 @@ render_opacity_node (GskGLRenderer   *self,
 
   if (gsk_render_node_get_node_type (child) == GSK_CONTAINER_NODE)
     {
-      gboolean is_offscreen;
+      bool is_offscreen;
       TextureRegion region;
 
       /* The semantics of an opacity node mandate that when, e.g., two color nodes overlap,
@@ -1488,7 +1488,7 @@ render_radial_gradient_node (GskGLRenderer   *self,
     }
 }
 
-static inline gboolean
+static inline bool
 rounded_inner_rect_contains_rect (const GskRoundedRect  *rounded,
                                   const graphene_rect_t *rect)
 {
@@ -1604,7 +1604,7 @@ render_clipped_child (GskGLRenderer         *self,
       /* well fuck */
       const float scale_x = builder->scale_x;
       const float scale_y = builder->scale_y;
-      gboolean is_offscreen;
+      bool is_offscreen;
       TextureRegion region;
       GskRoundedRect scaled_clip;
 
@@ -1651,7 +1651,7 @@ render_rounded_clip_node (GskGLRenderer       *self,
   const GskRoundedRect *clip = gsk_rounded_clip_node_peek_clip (node);
   GskRenderNode *child = gsk_rounded_clip_node_get_child (node);
   GskRoundedRect transformed_clip;
-  gboolean need_offscreen;
+  bool need_offscreen;
   int i;
 
   if (node_is_invisible (child))
@@ -1711,7 +1711,7 @@ render_rounded_clip_node (GskGLRenderer       *self,
   else
     {
       GskRoundedRect scaled_clip;
-      gboolean is_offscreen;
+      bool is_offscreen;
       TextureRegion region;
       /* NOTE: We are *not* transforming the clip by the current modelview here.
        *       We instead draw the untransformed clip to a texture and then transform
@@ -1754,7 +1754,7 @@ render_color_matrix_node (GskGLRenderer       *self,
 {
   GskRenderNode *child = gsk_color_matrix_node_get_child (node);
   TextureRegion region;
-  gboolean is_offscreen;
+  bool is_offscreen;
 
   if (node_is_invisible (child))
     return;
@@ -1904,7 +1904,7 @@ blur_node (GskGLRenderer   *self,
   const float scale_y = builder->scale_y;
   const float blur_extra = blur_radius * 2.0; /* 2.0 = shader radius_multiplier */
   float texture_width, texture_height;
-  gboolean is_offscreen;
+  bool is_offscreen;
   TextureRegion region;
   int blurred_texture_id;
 
@@ -2114,7 +2114,7 @@ render_inset_shadow_node (GskGLRenderer   *self,
   /* Blur the rendered unblurred inset shadow */
   /* Use a clip to cut away the unwanted parts outside of the original outline */
   {
-    const gboolean needs_clip = !gsk_rounded_rect_is_rectilinear (node_outline);
+    const bool needs_clip = !gsk_rounded_rect_is_rectilinear (node_outline);
     const float tx1 = blur_extra / 2.0 * scale_x / texture_width;
     const float tx2 = 1.0 - tx1;
     const float ty1 = blur_extra / 2.0 * scale_y / texture_height;
@@ -2608,7 +2608,7 @@ render_shadow_node (GskGLRenderer   *self,
       const float dx = shadow->dx;
       const float dy = shadow->dy;
       TextureRegion region;
-      gboolean is_offscreen;
+      bool is_offscreen;
       float min_x;
       float min_y;
       float max_x;
@@ -2700,7 +2700,7 @@ render_cross_fade_node (GskGLRenderer   *self,
   const float progress = gsk_cross_fade_node_get_progress (node);
   TextureRegion start_region;
   TextureRegion end_region;
-  gboolean is_offscreen1, is_offscreen2;
+  bool is_offscreen1, is_offscreen2;
   OpCrossFade *op;
 
   if (progress <= 0)
@@ -2760,7 +2760,7 @@ render_blend_node (GskGLRenderer   *self,
   GskRenderNode *bottom_child = gsk_blend_node_get_bottom_child (node);
   TextureRegion top_region;
   TextureRegion bottom_region;
-  gboolean is_offscreen1, is_offscreen2;
+  bool is_offscreen1, is_offscreen2;
   OpBlend *op;
 
   /* TODO: We create 2 textures here as big as the blend node, but both the
@@ -2807,7 +2807,7 @@ render_repeat_node (GskGLRenderer   *self,
   GskRenderNode *child = gsk_repeat_node_get_child (node);
   const graphene_rect_t *child_bounds = gsk_repeat_node_peek_child_bounds (node);
   TextureRegion region;
-  gboolean is_offscreen;
+  bool is_offscreen;
   OpRepeat *op;
 
   if (node_is_invisible (child))
@@ -3814,13 +3814,13 @@ gsk_gl_renderer_add_render_ops (GskGLRenderer   *self,
     }
 }
 
-static gboolean
+static bool
 add_offscreen_ops (GskGLRenderer         *self,
                    RenderOpBuilder       *builder,
                    const graphene_rect_t *bounds,
                    GskRenderNode         *child_node,
                    TextureRegion         *texture_region_out,
-                   gboolean              *is_offscreen,
+                   bool                  *is_offscreen,
                    guint                  flags)
 {
   float scale, width, height, size, scaled_size;
