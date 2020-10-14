@@ -677,7 +677,7 @@ gtk_accessible_platform_changed (GtkAccessible               *self,
 /*<private>
  * gtk_accessible_get_platform_state:
  * @self: a #GtkAccessible
- * @state: platform state to query
+ * @state: a boolean platform state to query
  *
  * Query a platform state, such as focus.
  *
@@ -693,6 +693,7 @@ gboolean
 gtk_accessible_get_platform_state (GtkAccessible              *self,
                                    GtkAccessiblePlatformState  state)
 {
+  g_return_val_if_fail (state != GTK_ACCESSIBLE_PLATFORM_STATE_SIZE, FALSE);
   return GTK_ACCESSIBLE_GET_IFACE (self)->get_platform_state (self, state);
 }
 
