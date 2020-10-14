@@ -32,12 +32,14 @@
 #include "gtkatspieditabletextprivate.h"
 #include "gtkatspivalueprivate.h"
 #include "gtkatspiselectionprivate.h"
+#include "gtkatspicomponentprivate.h"
 
 #include "a11y/atspi/atspi-accessible.h"
 #include "a11y/atspi/atspi-text.h"
 #include "a11y/atspi/atspi-editabletext.h"
 #include "a11y/atspi/atspi-value.h"
 #include "a11y/atspi/atspi-selection.h"
+#include "a11y/atspi/atspi-component.h"
 
 #include "gtkdebug.h"
 #include "gtkeditable.h"
@@ -613,6 +615,21 @@ gtk_at_spi_context_register_object (GtkAtSpiContext *self)
                                          NULL,
                                          NULL);
   self->n_registered_objects++;
+
+  vtable = gtk_atspi_get_component_vtable (widget);
+  if (vtable)
+    {
+      g_variant_builder_add (&interfaces, "s", atspi_component_interface.name);
+      self->registration_ids[self->n_registered_objects] =
+          g_dbus_connection_register_object (self->connection,
+                                             self->context_path,
+                                             (GDBusInterfaceInfo *) &atspi_component_interface,
+                                             vtable,
+                                             self,
+                                             NULL,
+                                             NULL);
+      self->n_registered_objects++;
+    }
 
   vtable = gtk_atspi_get_text_vtable (widget);
   if (vtable)
