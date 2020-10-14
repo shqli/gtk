@@ -782,6 +782,23 @@ emit_property_changed (GtkAtSpiContext *self,
 }
 
 static void
+emit_bounds_changed (GtkAtSpiContext *self,
+                     int              x,
+                     int              y,
+                     int              width,
+                     int              height)
+{
+  g_dbus_connection_emit_signal (self->connection,
+                                 NULL,
+                                 self->context_path,
+                                 "org.a11y.atspi.Event.Object",
+                                 "BoundsChanged",
+                                 g_variant_new ("(siiva{sv})",
+                                                "", 0, 0, g_variant_new ("(iiii)", x, y, width, height), NULL),
+                                 NULL);
+}
+
+static void
 gtk_at_spi_context_state_change (GtkATContext                *ctx,
                                  GtkAccessibleStateChange     changed_states,
                                  GtkAccessiblePropertyChange  changed_properties,
@@ -952,6 +969,19 @@ gtk_at_spi_context_state_change (GtkATContext                *ctx,
       gboolean state = gtk_accessible_get_platform_state (GTK_ACCESSIBLE (widget),
                                                           GTK_ACCESSIBLE_PLATFORM_STATE_FOCUSED);
       emit_state_changed (self, "focused", state);
+    }
+
+  if (changed_platform & GTK_ACCESSIBLE_PLATFORM_CHANGE_SIZE)
+    {
+      double x, y;
+      int width, height;
+
+      gtk_widget_translate_coordinates (widget,
+                                        GTK_WIDGET (gtk_widget_get_root (widget)),
+                                        0, 0, &x, &y);
+      width = gtk_widget_get_width (widget);
+      height = gtk_widget_get_height (widget);
+      emit_bounds_changed (self, (int)x, (int)y, width, height);
     }
 }
 
