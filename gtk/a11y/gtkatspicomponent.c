@@ -34,6 +34,84 @@
 #include <gio/gio.h>
 
 static void
+translate_coordinates_to_widget (GtkWidget      *widget,
+                                 AtspiCoordType  coordtype,
+                                 int             xi,
+                                 int             yi,
+                                 int            *xo,
+                                 int            *yo)
+{
+  double x = xi;
+  double y = yi;
+
+  switch (coordtype)
+    {
+    case ATSPI_COORD_TYPE_SCREEN:
+      g_warning ("Not suppporting screen coordinates, reported positions will be wrong");
+      G_GNUC_FALLTHROUGH;
+
+    case ATSPI_COORD_TYPE_WINDOW:
+      gtk_widget_translate_coordinates (GTK_WIDGET (gtk_widget_get_root (widget)),
+                                        widget,
+                                        x, y,
+                                        &x, &y);
+      break;
+
+    case ATSPI_COORD_TYPE_PARENT:
+      gtk_widget_translate_coordinates (gtk_widget_get_parent (widget),
+                                        widget,
+                                        x, y,
+                                        &x, &y);
+      break;
+
+    default:
+      g_assert_not_reached ();
+    }
+
+  *xo = (int)x;
+  *yo = (int)y;
+}
+
+static void
+translate_coordinates_from_widget (GtkWidget      *widget,
+                                   AtspiCoordType  coordtype,
+                                   int             xi,
+                                   int             yi,
+                                   int            *xo,
+                                   int            *yo)
+{
+  double x = xi;
+  double y = yi;
+
+  switch (coordtype)
+    {
+    case ATSPI_COORD_TYPE_SCREEN:
+      g_warning ("Not suppporting screen coordinates, reported positions will be wrong");
+      G_GNUC_FALLTHROUGH;
+
+    case ATSPI_COORD_TYPE_WINDOW:
+      gtk_widget_translate_coordinates (widget,
+                                        GTK_WIDGET (gtk_widget_get_root (widget)),
+                                        x, y,
+                                        &x, &y);
+      break;
+
+    case ATSPI_COORD_TYPE_PARENT:
+      gtk_widget_translate_coordinates (widget,
+                                        gtk_widget_get_parent (widget),
+                                        x, y,
+                                        &x, &y);
+      break;
+
+    default:
+      g_assert_not_reached ();
+    }
+
+  *xo = (int)x;
+  *yo = (int)y;
+}
+
+static void
 component_handle_method (GDBusConnection       *connection,
                          const gchar           *sender,
                          const gchar           *object_path,
@@ -52,40 +130,26 @@ g_print ("%s %s\n", interface_name, method_name);
     {
       int x, y;
       AtspiCoordType coordtype;
-      double xo, yo;
       gboolean ret;
 
       g_variant_get (parameters, "(iiu)", &x, &y, &coordtype);
 
-      if (coordtype != ATSPI_COORD_TYPE_WINDOW)
-        g_warning ("Not suppporting screen coordinates, reported positions will be wrong");
+      translate_coordinates_to_widget (widget, coordtype, x, y, &x, &y);
 
-      gtk_widget_translate_coordinates (GTK_WIDGET (gtk_widget_get_root (widget)),
-                                        widget,
-                                        x, y,
-                                        &xo, &yo);
-
-      ret = gtk_widget_contains (widget, xo, yo);
+      ret = gtk_widget_contains (widget, x, y);
       g_dbus_method_invocation_return_value (invocation, g_variant_new ("(b)", ret));
     }
   else if (g_strcmp0 (method_name, "GetAccessibleAtPoint") == 0)
     {
       int x, y;
       AtspiCoordType coordtype;
-      double xo, yo;
       GtkWidget *child;
 
       g_variant_get (parameters, "(iiu)", &x, &y, &coordtype);
 
-      if (coordtype != ATSPI_COORD_TYPE_WINDOW)
-        g_warning ("Not suppporting screen coordinates, reported positions will be wrong");
+      translate_coordinates_to_widget (widget, coordtype, x, y, &x, &y);
 
-      gtk_widget_translate_coordinates (GTK_WIDGET (gtk_widget_get_root (widget)),
-                                        widget,
-                                        x, y,
-                                        &xo, &yo);
-
-      child = gtk_widget_pick (widget, xo, yo, GTK_PICK_DEFAULT);
+      child = gtk_widget_pick (widget, x, y, GTK_PICK_DEFAULT);
       if (!child)
         {
           g_dbus_method_invocation_return_value (invocation, g_variant_new ("(@(so))", gtk_at_spi_null_ref ()));
@@ -100,36 +164,26 @@ g_print ("%s %s\n", interface_name, method_name);
   else if (g_strcmp0 (method_name, "GetExtents") == 0)
     {
       AtspiCoordType coordtype;
-      double x, y;
+      int x, y;
       int width = gtk_widget_get_width (widget);
       int height = gtk_widget_get_height (widget);
 
       g_variant_get (parameters, "(u)", &coordtype);
 
-      if (coordtype != ATSPI_COORD_TYPE_WINDOW)
-        g_warning ("Not suppporting screen coordinates, reported positions will be wrong");
+      translate_coordinates_from_widget (widget, coordtype, 0, 0, &x, &y);
 
-      gtk_widget_translate_coordinates (widget,
-                                        GTK_WIDGET (gtk_widget_get_root (widget)),
-                                        0., 0.,
-                                        &x, &y);
-      g_dbus_method_invocation_return_value (invocation, g_variant_new ("((iiii))", (int)x, (int)y, width, height));
+      g_dbus_method_invocation_return_value (invocation, g_variant_new ("((iiii))", x, y, width, height));
     }
   else if (g_strcmp0 (method_name, "GetPosition") == 0)
     {
       AtspiCoordType coordtype;
-      double x, y;
+      int x, y;
 
       g_variant_get (parameters, "(u)", &coordtype);
 
-      if (coordtype != ATSPI_COORD_TYPE_WINDOW)
-        g_warning ("Not suppporting screen coordinates, reported positions will be wrong");
+      translate_coordinates_from_widget (widget, coordtype, 0, 0, &x, &y);
 
-      gtk_widget_translate_coordinates (widget,
-                                        GTK_WIDGET (gtk_widget_get_root (widget)),
-                                        0, 0,
-                                        &x, &y);
-      g_dbus_method_invocation_return_value (invocation, g_variant_new ("(ii)", (int)x, (int)y));
+      g_dbus_method_invocation_return_value (invocation, g_variant_new ("(ii)", x, y));
     }
   else if (g_strcmp0 (method_name, "GetSize") == 0)
     {
