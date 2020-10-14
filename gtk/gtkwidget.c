@@ -3810,7 +3810,6 @@ gtk_widget_allocate (GtkWidget    *widget,
 
   gtk_widget_adjust_size_allocation (widget, &adjusted);
 
-
   if (adjusted.width < 0 || adjusted.height < 0)
     {
       g_warning ("gtk_widget_size_allocate(): attempt to allocate %s %s %p with width %d and height %d",
@@ -3905,6 +3904,9 @@ gtk_widget_allocate (GtkWidget    *widget,
   priv->alloc_needed_on_child = FALSE;
 
   gtk_widget_update_paintables (widget);
+
+  if (size_changed)
+    gtk_accessible_platform_changed (GTK_ACCESSIBLE (widget), GTK_ACCESSIBLE_PLATFORM_CHANGE_SIZE);
 
 skip_allocate:
   if (size_changed || baseline_changed)
